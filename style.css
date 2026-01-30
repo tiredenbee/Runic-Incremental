@@ -1,0 +1,60 @@
+/* Core Layout */
+body {
+    background-color: #121212; /* Dark theme */
+    color: #e0e0e0;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.game-window {
+    background-color: #1e1e1e;
+    width: 90%;
+    max-width: 500px;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+    border: 1px solid #333;
+}
+
+/* Typography */
+.label {
+    font-size: 1.2rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#earth-display {
+    font-size: 4rem; /* Massive, easy to read */
+    margin: 0;
+    color: #4db6ac; /* Earthy teal */
+}
+
+/* The Button */
+.main-button {
+    background-color: #4db6ac;
+    color: #121212;
+    border: none;
+    padding: 1.5rem 3rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+    margin-top: 2rem;
+    width: 100%;
+}
+
+.main-button:hover {
+    background-color: #80cbc4;
+}
+
+.main-button:active {
+    transform: scale(0.96); /* Visual feedback when clicking */
+}
