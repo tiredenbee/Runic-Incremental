@@ -1,4 +1,3 @@
-// 1. RUNE DATABASE
 const EarthRunes = [
     { name: "Cracked Pebble",   chance: 2,     maxMastery: 1000, earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
     { name: "Smooth Basalt",    chance: 10,    maxMastery: 1000, earthMult: 3,   luckMult: 2,    color: "#505050" },
@@ -8,15 +7,13 @@ const EarthRunes = [
     { name: "Gaia's Heart",     chance: 15000, maxMastery: 100,  earthMult: 20,  luckMult: 10,   color: "#32ff96" }
 ];
 
-// 2. PLAYER STATE
 let player = {
     earth: 0,
     baseEarthPerClick: 1,
     baseLuck: 1,
-    collection: {} // Format: { "Cracked Pebble": 15 }
+    collection: {}
 };
 
-// 3. CORE LOGIC
 function calculateTotals() {
     let totalEarthMultiplier = 1;
     let totalLuckMultiplier = 1;
@@ -26,7 +23,6 @@ function calculateTotals() {
         const level = Math.min(owned, rune.maxMastery);
         
         if (level > 0) {
-            // Multiplicative increment formula
             const currentEarthBoost = 1 + ((rune.earthMult - 1) * (level / rune.maxMastery));
             const currentLuckBoost = 1 + ((rune.luckMult - 1) * (level / rune.maxMastery));
 
@@ -37,6 +33,7 @@ function calculateTotals() {
 
     return {
         earthPerClick: player.baseEarthPerClick * totalEarthMultiplier,
+        earthMult: totalEarthMultiplier,
         luck: player.baseLuck * totalLuckMultiplier
     };
 }
@@ -49,16 +46,13 @@ function dig() {
 
 function roll() {
     if (player.earth < 50) return;
-    
     player.earth -= 50;
     const stats = calculateTotals();
 
-    // Sort rarest to commonest for RNG check
     let sortedRunes = [...EarthRunes].sort((a, b) => b.chance - a.chance);
-    let result = EarthRunes[0]; // Default to most common
+    let result = EarthRunes[0];
 
     for (let rune of sortedRunes) {
-        // Effective chance is base chance divided by luck
         let rollChance = Math.max(1, rune.chance / stats.luck);
         if (Math.random() < (1 / rollChance)) {
             result = rune;
@@ -66,35 +60,26 @@ function roll() {
         }
     }
 
-    // Update collection
     player.collection[result.name] = (player.collection[result.name] || 0) + 1;
-    
-    // UI Feedback for roll
-    const rollDisplay = document.getElementById('last-roll-text');
-    rollDisplay.innerText = `Rolled: ${result.name}!`;
-    rollDisplay.style.color = result.color;
-
+    document.getElementById('last-roll-text').innerText = `Rolled: ${result.name}!`;
+    document.getElementById('last-roll-text').style.color = result.color;
     updateUI();
 }
 
-// 4. UI RENDERING
 function updateUI() {
     const stats = calculateTotals();
     
-    // Main Stats
     document.getElementById('earth-display').innerText = Math.floor(player.earth).toLocaleString();
+    document.getElementById('earth-mult-display').innerText = `Multiplier: ${stats.earthMult.toFixed(2)}x`;
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
     document.getElementById('dig-btn').innerText = `Dig for Earth (+${stats.earthPerClick.toLocaleString(undefined, {maximumFractionDigits: 1})})`;
 
-    // Rune List
     const list = document.getElementById('rune-list');
     list.innerHTML = "";
 
     EarthRunes.forEach(rune => {
         const owned = player.collection[rune.name] || 0;
         const level = Math.min(owned, rune.maxMastery);
-        
-        // Calculate specific contribution for display
         const eBoost = 1 + ((rune.earthMult - 1) * (level / rune.maxMastery));
         const lBoost = 1 + ((rune.luckMult - 1) * (level / rune.maxMastery));
 
@@ -115,9 +100,6 @@ function updateUI() {
     });
 }
 
-// 5. INITIALIZATION
 document.getElementById('dig-btn').addEventListener('click', dig);
 document.getElementById('roll-btn').addEventListener('click', roll);
-
-// Start the UI
 updateUI();

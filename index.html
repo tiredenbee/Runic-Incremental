@@ -21,7 +21,7 @@
             <div class="glass-card stat-card">
                 <p class="label">Total Earth</p>
                 <h1 id="earth-display">0</h1>
-                <p id="luck-stat-display">Luck: 1.00x</p>
+                <p id="earth-mult-display" class="stat-subtext">Multiplier: 1.00x</p>
                 <button id="dig-btn" class="action-btn main-btn">Dig for Earth</button>
             </div>
 
@@ -35,9 +35,10 @@
 
         <section class="panel right-panel">
             <div class="glass-card roller-card">
-                <h2 class="section-title">Earth Rune Roller</h2>
+                <h2 class="section-title">Earth Rune</h2>
+                <p id="luck-stat-display" class="luck-text">Luck: 1.00x</p>
                 <p class="cost-text">Cost: 50 Earth</p>
-                <button id="roll-btn" class="action-btn roll-btn">ROLL RUNE</button>
+                <button id="roll-btn" class="action-btn roll-btn">ROLL</button>
                 <div id="roll-result-container">
                     <span id="last-roll-text">Waiting to roll...</span>
                 </div>
@@ -45,8 +46,7 @@
 
             <div class="glass-card collection-window">
                 <h2 class="section-title">Earth Rune Collection</h2>
-                <div id="rune-list">
-                    </div>
+                <div id="rune-list"></div>
             </div>
         </section>
 
