@@ -9,7 +9,8 @@ const EarthRunes = [
 ];
 
 const Upgrades = {
-    shovelPower: { name: "Shovel Power", baseCost: 10, costAdd: 5, maxLevel: 25, powerPerLevel: 1 }
+    // Changed baseCost to 5 to match your requirement
+    shovelPower: { name: "Shovel Power", baseCost: 5, costAdd: 5, maxLevel: 25, powerPerLevel: 1 }
 };
 
 // 2. PLAYER STATE
@@ -37,7 +38,6 @@ function showNotification(text) {
 
 function saveGame(isAuto = false) {
     localStorage.setItem("RunicIncrementalSave", JSON.stringify(player));
-    // We only show the notification for manual saves or if you want it for auto-saves too
     showNotification(isAuto ? "Autosaved..." : "Saved Successfully!");
 }
 
@@ -47,7 +47,6 @@ function loadGame() {
         try {
             const parsed = JSON.parse(savedData);
             player = { ...getInitialState(), ...parsed };
-            // Ensure nested objects are also merged
             player.upgrades = { ...getInitialState().upgrades, ...parsed.upgrades };
             player.collection = { ...getInitialState().collection, ...parsed.collection };
         } catch (e) {
@@ -91,6 +90,7 @@ function dig() {
 function buyUpgrade(id) {
     const upg = Upgrades[id];
     const level = player.upgrades[id] || 0;
+    // Updated cost formula: 5 + (Level * 5)
     const cost = upg.baseCost + (level * upg.costAdd);
     if (level < upg.maxLevel && player.earth >= cost) {
         player.earth -= cost;
@@ -127,11 +127,13 @@ function updateUI() {
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
         const upg = Upgrades[id], lvl = player.upgrades[id], maxed = lvl >= upg.maxLevel;
+        // Cost also updated here for visual display
+        const cost = upg.baseCost + (lvl * upg.costAdd);
         const div = document.createElement('div');
         div.className = `upgrade-item ${maxed ? 'maxed' : ''}`;
         div.onclick = () => buyUpgrade(id);
         div.innerHTML = `<div><strong>${upg.name}</strong><br><small>Level: ${lvl}/${upg.maxLevel}</small></div>
-                         <div>${maxed ? 'MAXED' : (upg.baseCost + lvl * upg.costAdd).toLocaleString() + ' Earth'}</div>`;
+                         <div>${maxed ? 'MAXED' : cost.toLocaleString() + ' Earth'}</div>`;
         upgList.appendChild(div);
     });
 
@@ -157,5 +159,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('roll-btn').addEventListener('click', roll);
     document.getElementById('manual-save-btn').addEventListener('click', () => saveGame(false));
     document.getElementById('reset-btn').addEventListener('click', resetGame);
-    setInterval(() => saveGame(true), 15000); // Autosave every 15 seconds
+    setInterval(() => saveGame(true), 15000); 
 });
