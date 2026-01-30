@@ -18,7 +18,7 @@
     <nav class="tabs">
         <div class="nav-group main-tabs">
             <button class="tab-btn active" data-tab="earth-tab">Earth</button>
-            <button id="water-tab-btn" class="tab-btn locked" data-tab="water-tab">Water</button>
+            <button class="tab-btn locked" data-tab="water-tab">Water</button>
             <button class="tab-btn locked" data-tab="fire-tab">Fire</button>
             <button class="tab-btn locked" data-tab="air-tab">Air</button>
         </div>
@@ -38,8 +38,8 @@
                         <button id="dig-btn" class="action-btn main-btn">Dig for Earth</button>
                     </div>
                     <div class="glass-card upgrade-window">
-                        <h2 class="section-title">Earth Upgrades</h2>
-                        <div id="earth-upgrade-list"></div>
+                        <h2 class="section-title">Upgrades</h2>
+                        <div id="upgrade-list"></div>
                     </div>
                 </section>
 
@@ -47,42 +47,15 @@
                     <div class="glass-card roller-card">
                         <h2 class="section-title">Earth Rune</h2>
                         <p id="luck-stat-display" class="luck-text">Luck: 1.00x</p>
-                        <button id="roll-btn" class="action-btn roll-btn">ROLL (50 Earth)</button>
-                        <div id="roll-result-container"><span id="last-roll-text">Waiting...</span></div>
+                        <p class="cost-text">Cost: 50 Earth</p>
+                        <button id="roll-btn" class="action-btn roll-btn">ROLL</button>
+                        <div id="roll-result-container">
+                            <span id="last-roll-text">Waiting to roll...</span>
+                        </div>
                     </div>
                     <div class="glass-card collection-window">
-                        <h2 class="section-title">Earth Collection</h2>
-                        <div id="earth-rune-list"></div>
-                    </div>
-                </section>
-            </div>
-        </section>
-
-        <section id="water-tab" class="tab-content">
-            <div class="layout-wrapper">
-                <section class="panel left-panel">
-                    <div class="glass-card stat-card" style="border-color: #4fc3f7;">
-                        <p class="label">Total Water</p>
-                        <h1 id="water-display" style="color: #4fc3f7;">0</h1>
-                        <p id="water-mult-display" class="stat-subtext">Multiplier: 1.00x</p>
-                        <button id="gather-water-btn" class="action-btn" style="background: #0288d1; color: white;">Gather Water</button>
-                    </div>
-                    <div class="glass-card upgrade-window">
-                        <h2 class="section-title" style="color: #4fc3f7;">Water Upgrades</h2>
-                        <div id="water-upgrade-list"></div>
-                    </div>
-                </section>
-
-                <section class="panel right-panel">
-                    <div class="glass-card roller-card">
-                        <h2 class="section-title">Water Rune</h2>
-                        <p id="water-luck-display" class="luck-text">Luck: 1.00x</p>
-                        <button id="water-roll-btn" class="action-btn" style="background: #01579b; color: white;">CONJURE (50 Water)</button>
-                        <div id="water-roll-result"><span id="water-roll-text">Waiting...</span></div>
-                    </div>
-                    <div class="glass-card collection-window">
-                        <h2 class="section-title">Water Collection</h2>
-                        <div id="water-rune-list"></div>
+                        <h2 class="section-title">Earth Rune Collection</h2>
+                        <div id="rune-list"></div>
                     </div>
                 </section>
             </div>
@@ -91,7 +64,8 @@
         <section id="automation-tab" class="tab-content">
             <div class="glass-card full-width">
                 <h2 class="section-title">Automation Hub</h2>
-                <div id="automation-upgrade-list"></div>
+                <div id="automation-upgrade-list" class="upgrade-grid">
+                    </div>
             </div>
         </section>
     </main>
