@@ -1,18 +1,18 @@
 // 1. DATA DATABASE
 const EarthRunes = [
-    { name: "Cracked Pebble",   chance: 2,     maxMastery: 200,  earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
-    { name: "Smooth Basalt",    chance: 10,    maxMastery: 200,  earthMult: 3,   luckMult: 2,    color: "#505050" },
-    { name: "Sedimentary Slab", chance: 100,   maxMastery: 150,  earthMult: 5,   luckMult: 2,    color: "#8c6e5a" },
-    { name: "Geode Core",       chance: 250,   maxMastery: 100,  earthMult: 5,   luckMult: 3,    color: "#b464ff" },
-    { name: "Tectonic Slab",    chance: 2500,  maxMastery: 50,   earthMult: 10,  luckMult: 5,    color: "#ff6400" },
-    { name: "Gaia's Heart",     chance: 15000, maxMastery: 20,   earthMult: 20,  luckMult: 10,   color: "#32ff96" }
+    { name: "Cracked Pebble",   rarity: "Basic",       chance: 2,     maxMastery: 200,  earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
+    { name: "Smooth Basalt",    rarity: "Basic",       chance: 10,    maxMastery: 200,  earthMult: 3,   luckMult: 2,    color: "#505050" },
+    { name: "Sedimentary Slab", rarity: "Regular",     chance: 100,   maxMastery: 150,  earthMult: 5,   luckMult: 2,    color: "#8c6e5a" },
+    { name: "Geode Core",       rarity: "Rare",        chance: 250,   maxMastery: 100,  earthMult: 5,   luckMult: 3,    color: "#b464ff" },
+    { name: "Tectonic Slab",    rarity: "Exceptional", chance: 2500,  maxMastery: 50,   earthMult: 10,  luckMult: 5,    color: "#ff6400" },
+    { name: "Gaia's Heart",     rarity: "Mythic",      chance: 15000, maxMastery: 20,   earthMult: 20,  luckMult: 10,   color: "#32ff96" }
 ];
 
 const Upgrades = {
     shovelPower: { name: "Shovel Power", baseCost: 5, costAdd: 5, maxLevel: 24, powerPerLevel: 1, hidden: false },
     pickaxe: { name: "Pickaxe", baseCost: 250, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: false },
     pickaxeStrength: { name: "Pickaxe Strength", baseCost: 25, costAdd: 25, maxLevel: 24, powerPerLevel: 5, hidden: true },
-    drill: { name: "Drill", baseCost: 500, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: true }
+    drill: { name: "Drill", baseCost: 750, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: true }
 };
 
 // 2. PLAYER STATE
@@ -51,9 +51,7 @@ function loadGame() {
             player = { ...getInitialState(), ...parsed };
             player.upgrades = { ...getInitialState().upgrades, ...parsed.upgrades };
             player.collection = { ...getInitialState().collection, ...parsed.collection };
-        } catch (e) {
-            console.error("Save data corrupt.");
-        }
+        } catch (e) { console.error("Save data corrupt."); }
     }
 }
 
@@ -67,7 +65,6 @@ function resetGame() {
 
 // 4. CORE MATH
 function calculateTotals() {
-    // Rune Multipliers
     let runeEMult = 1, runeLMult = 1;
     EarthRunes.forEach(rune => {
         const level = Math.min(player.collection[rune.name] || 0, rune.maxMastery);
@@ -77,12 +74,10 @@ function calculateTotals() {
         }
     });
 
-    // Upgrade Additive Power
     const shovelBonus = player.upgrades.shovelPower * Upgrades.shovelPower.powerPerLevel;
     const pickaxeStrBonus = player.upgrades.pickaxeStrength * Upgrades.pickaxeStrength.powerPerLevel;
     const totalBasePower = player.baseEarthPerClick + shovelBonus + pickaxeStrBonus;
 
-    // Upgrade Multipliers (Base 1x + Pickaxe 1x + Drill 1x)
     let upgradeMult = 1;
     if (player.upgrades.pickaxe > 0) upgradeMult += Upgrades.pickaxe.multAdd;
     if (player.upgrades.drill > 0) upgradeMult += Upgrades.drill.multAdd;
@@ -108,13 +103,10 @@ function buyUpgrade(id) {
     if (level < upg.maxLevel && player.earth >= cost) {
         player.earth -= cost;
         player.upgrades[id]++;
-        
-        // Handle Unlocking hidden upgrades
         if (id === "pickaxe") {
             Upgrades.pickaxeStrength.hidden = false;
             Upgrades.drill.hidden = false;
         }
-
         updateUI();
         saveGame(true);
     }
@@ -143,7 +135,6 @@ function updateUI() {
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
     document.getElementById('dig-btn').innerText = `Dig for Earth (+${stats.earthPerClick.toLocaleString(undefined, {maximumFractionDigits: 1})})`;
 
-    // Check visibility for Pickaxe children on UI refresh (in case of load)
     if (player.upgrades.pickaxe > 0) {
         Upgrades.pickaxeStrength.hidden = false;
         Upgrades.drill.hidden = false;
@@ -154,7 +145,6 @@ function updateUI() {
     Object.keys(Upgrades).forEach(id => {
         const upg = Upgrades[id];
         if (upg.hidden) return;
-
         const lvl = player.upgrades[id], maxed = lvl >= upg.maxLevel;
         const cost = upg.baseCost + (lvl * upg.costAdd);
         const div = document.createElement('div');
@@ -168,13 +158,22 @@ function updateUI() {
     const runeList = document.getElementById('rune-list');
     runeList.innerHTML = "";
     EarthRunes.forEach(r => {
-        const count = player.collection[r.name] || 0, m = Math.min(count, r.maxMastery);
-        const eb = 1 + (r.earthMult - 1) * (m / r.maxMastery), lb = 1 + (r.luckMult - 1) * (m / r.maxMastery);
+        const count = player.collection[r.name] || 0;
+        const masteryLevel = Math.min(count, r.maxMastery);
+        const currentChance = Math.max(1, r.chance / stats.luck).toLocaleString(undefined, {maximumFractionDigits: 1});
+        const eb = 1 + (r.earthMult - 1) * (masteryLevel / r.maxMastery);
+        const lb = 1 + (r.luckMult - 1) * (masteryLevel / r.maxMastery);
+        
         const div = document.createElement('div');
-        div.className = "rune-item"; div.style.borderLeft = `5px solid ${r.color}`;
-        div.innerHTML = `<div><span style="color:${r.color};font-weight:bold">${r.name}</span><br>
-                         <small>Owned: ${count} | Mastery: ${m}/${r.maxMastery}</small></div>
-                         <div class="rune-buffs">x${eb.toFixed(2)} Earth<br>x${lb.toFixed(2)} Luck</div>`;
+        div.className = "rune-item"; 
+        div.style.borderLeft = `5px solid ${r.color}`;
+        div.innerHTML = `
+            <div>
+                <span style="color:${r.color}; font-weight:bold">${r.name}</span> 
+                <span style="font-size:0.75rem; opacity:0.8;">[${r.rarity}]</span><br>
+                <small>Owned: ${count} | <span style="color:var(--luck-color)">1 in ${currentChance}</span></small>
+            </div>
+            <div class="rune-buffs">x${eb.toFixed(2)} Earth<br>x${lb.toFixed(2)} Luck</div>`;
         runeList.appendChild(div);
     });
 }
