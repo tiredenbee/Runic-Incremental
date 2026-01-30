@@ -7,11 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="notification-container"></div>
     
     <div class="top-controls">
         <button id="reset-btn" class="corner-btn danger">RESET GAME</button>
-        <button id="manual-save-btn" class="corner-btn success">SAVE GAME</button>
+        <div class="save-wrapper">
+            <button id="manual-save-btn" class="corner-btn success">SAVE GAME</button>
+            <div id="notification-container"></div>
+        </div>
     </div>
 
     <nav class="tabs">
@@ -58,7 +60,7 @@
         <section id="water-tab" class="tab-content">
             <div class="glass-card full-width">
                 <h2 class="section-title">Water Realm</h2>
-                <p>Welcome to the Water Realm. Gathering logic coming soon...</p>
+                <p>Water mechanics unlocked! (Implementation in progress)</p>
             </div>
         </section>
 
