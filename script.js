@@ -14,7 +14,8 @@ const Upgrades = {
     drill: { name: "Drill", baseCost: 750, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: true },
     drillStrength: { name: "Drill Strength", baseCost: 125, costAdd: 125, maxLevel: 24, powerPerLevel: 25, hidden: true },
     runeLuck: { name: "Rune Luck", baseCost: 1000, costAdd: 1000, maxLevel: 50, luckPerLevel: 0.01, hidden: true },
-    automation: { name: "Automation", baseCost: 100000, costAdd: 0, maxLevel: 1, hidden: true }
+    automation: { name: "Automation", baseCost: 100000, costAdd: 0, maxLevel: 1, hidden: true },
+    unlockWater: { name: "Unlock Water", baseCost: 1000000, costAdd: 0, maxLevel: 1, hidden: true }
 };
 
 const AutoUpgrades = {
@@ -22,13 +23,13 @@ const AutoUpgrades = {
     autoUpgrade: { name: "Auto-Upgrade", cost: 500000, desc: "Buys cheapest Earth upgrade." }
 };
 
-// Initial State
 let player = {
     earth: 0,
-    upgrades: { shovelPower: 0, pickaxe: 0, pickaxeStrength: 0, drill: 0, drillStrength: 0, runeLuck: 0, automation: 0 },
+    upgrades: { shovelPower: 0, pickaxe: 0, pickaxeStrength: 0, drill: 0, drillStrength: 0, runeLuck: 0, automation: 0, unlockWater: 0 },
     autoPurchased: { autoDig: false, autoUpgrade: false },
     collection: {},
-    automationUnlocked: false
+    automationUnlocked: false,
+    waterUnlocked: false
 };
 
 function calculateTotals() {
@@ -52,7 +53,6 @@ function calculateTotals() {
 function updateUI() {
     const stats = calculateTotals();
     
-    // Numbers
     document.getElementById('earth-display').innerText = Math.floor(player.earth).toLocaleString();
     document.getElementById('earth-mult-display').innerText = `Multiplier: ${stats.mult.toFixed(2)}x`;
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
@@ -61,9 +61,12 @@ function updateUI() {
     // Hidden logic
     if (player.upgrades.pickaxe > 0) { Upgrades.pickaxeStrength.hidden = false; Upgrades.drill.hidden = false; }
     if (player.upgrades.drill > 0) { Upgrades.drillStrength.hidden = false; Upgrades.runeLuck.hidden = false; Upgrades.automation.hidden = false; }
+    if (player.upgrades.automation > 0) { Upgrades.unlockWater.hidden = false; }
+    
     if (player.automationUnlocked) document.getElementById('auto-tab-btn').classList.remove('hidden');
+    if (player.waterUnlocked) document.getElementById('water-tab-btn').classList.remove('locked');
 
-    // Render Standard Upgrades
+    // Upgrades
     const upgList = document.getElementById('upgrade-list');
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
@@ -78,6 +81,7 @@ function updateUI() {
                 player.earth -= cost;
                 player.upgrades[id]++;
                 if(id === 'automation') player.automationUnlocked = true;
+                if(id === 'unlockWater') player.waterUnlocked = true;
                 updateUI();
             }
         };
@@ -86,7 +90,7 @@ function updateUI() {
         upgList.appendChild(div);
     });
 
-    // Render Automation Upgrades
+    // Automation
     const autoList = document.getElementById('automation-upgrade-list');
     autoList.innerHTML = "";
     Object.keys(AutoUpgrades).forEach(id => {
@@ -106,67 +110,52 @@ function updateUI() {
         autoList.appendChild(div);
     });
 
-    // Render Runes
+    // Runes - Fixed Display Logic
     const runeList = document.getElementById('rune-list');
     runeList.innerHTML = "";
     EarthRunes.forEach(r => {
         const count = player.collection[r.name] || 0;
         const disc = count > 0;
+        
+        // Calculate current boost based on Mastery Mastery
+        const m = Math.min(count, r.maxMastery);
+        const currentEMult = 1 + ((r.earthMult - 1) * (m / r.maxMastery));
+        const currentLMult = 1 + ((r.luckMult - 1) * (m / r.maxMastery));
+
         const div = document.createElement('div');
         div.className = `rune-item ${disc ? '' : 'undiscovered'}`;
         div.style.borderLeft = disc ? `5px solid ${r.color}` : `5px solid #333`;
         div.innerHTML = `<div><span style="color:${disc ? r.color : '#555'}">${disc ? r.name : '???'}</span> [${disc ? r.rarity : '???'}]<br>
                         <small>Owned: ${count} | 1 in ${disc ? (r.chance / stats.luck).toFixed(1) : '???'}</small></div>
-                        <div class="rune-buffs" style="visibility:${disc ? 'visible' : 'hidden'}">x${r.earthMult} Earth<br>x${r.luckMult} Luck</div>`;
+                        <div class="rune-buffs" style="visibility:${disc ? 'visible' : 'hidden'}">
+                            x${currentEMult.toFixed(2)} Earth<br>x${currentLMult.toFixed(2)} Luck
+                        </div>`;
         runeList.appendChild(div);
     });
 }
 
-// Logic Loops
-document.getElementById('dig-btn').onclick = () => { 
-    player.earth += calculateTotals().gain; 
-    updateUI(); 
-};
-
+// Controls
+document.getElementById('dig-btn').onclick = () => { player.earth += calculateTotals().gain; updateUI(); };
 document.getElementById('roll-btn').onclick = () => {
     if (player.earth >= 50) {
         player.earth -= 50;
         const stats = calculateTotals();
         let won = EarthRunes[0];
         let sorted = [...EarthRunes].sort((a,b) => b.chance - a.chance);
-        for (let r of sorted) { 
-            if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; } 
-        }
+        for (let r of sorted) { if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; } }
         player.collection[won.name] = (player.collection[won.name] || 0) + 1;
         updateUI();
     }
 };
 
-// Automation Interval (5 times per second)
 setInterval(() => {
-    if (player.autoPurchased.autoDig) {
-        player.earth += (calculateTotals().gain / 5);
-        updateUI();
-    }
+    if (player.autoPurchased.autoDig) { player.earth += (calculateTotals().gain / 5); updateUI(); }
 }, 200);
 
-// Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = () => {
-        if(!btn.classList.contains('locked')) {
-            document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.tab).classList.add('active');
-        }
-    };
+    btn.onclick = () => { if(!btn.classList.contains('locked')) { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); } };
 });
 
-// Reset and Save
-document.getElementById('reset-btn').onclick = () => {
-    if(confirm("Wipe all progress?")) {
-        localStorage.clear();
-        location.reload();
-    }
-};
+document.getElementById('reset-btn').onclick = () => { if(confirm("Wipe progress?")) { localStorage.clear(); location.reload(); } };
 
 updateUI();
