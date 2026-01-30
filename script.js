@@ -9,124 +9,115 @@ const EarthRunes = [
 ];
 
 const Upgrades = {
-    shovelPower: {
-        name: "Shovel Power",
-        baseCost: 10,
-        costAdd: 5,
-        maxLevel: 25,
-        powerPerLevel: 1
-    }
+    shovelPower: { name: "Shovel Power", baseCost: 10, costAdd: 5, maxLevel: 25, powerPerLevel: 1 }
 };
 
 // 2. PLAYER STATE
-let player = {
-    earth: 0,
-    baseEarthPerClick: 1,
-    baseLuck: 1,
-    upgrades: { shovelPower: 0 },
-    collection: {}
-};
+function getInitialState() {
+    return {
+        earth: 0,
+        baseEarthPerClick: 1,
+        baseLuck: 1,
+        upgrades: { shovelPower: 0 },
+        collection: {}
+    };
+}
 
-// 3. SAVE/LOAD LOGIC
-function showSaveNotification() {
+let player = getInitialState();
+
+// 3. UI & SYSTEM FUNCTIONS
+function showNotification(text) {
     const container = document.getElementById('notification-container');
     const popup = document.createElement('div');
     popup.className = 'save-popup';
-    popup.innerText = 'Game Saved!';
+    popup.innerText = text;
     container.appendChild(popup);
-    
-    // Remove element after animation ends
-    setTimeout(() => { popup.remove(); }, 2500);
+    setTimeout(() => popup.remove(), 2500);
 }
 
-function saveGame() {
+function saveGame(isAuto = false) {
     localStorage.setItem("RunicIncrementalSave", JSON.stringify(player));
-    showSaveNotification();
+    // We only show the notification for manual saves or if you want it for auto-saves too
+    showNotification(isAuto ? "Autosaved..." : "Saved Successfully!");
 }
 
 function loadGame() {
     const savedData = localStorage.getItem("RunicIncrementalSave");
     if (savedData) {
-        const parsed = JSON.parse(savedData);
-        // Deep merge to ensure nested objects like collection and upgrades are loaded
-        player.earth = parsed.earth || 0;
-        player.upgrades = { ...player.upgrades, ...parsed.upgrades };
-        player.collection = { ...player.collection, ...parsed.collection };
-        console.log("Runic Incremental: Data Loaded");
+        try {
+            const parsed = JSON.parse(savedData);
+            player = { ...getInitialState(), ...parsed };
+            // Ensure nested objects are also merged
+            player.upgrades = { ...getInitialState().upgrades, ...parsed.upgrades };
+            player.collection = { ...getInitialState().collection, ...parsed.collection };
+        } catch (e) {
+            console.error("Save data corrupt.");
+        }
     }
 }
 
-// 4. CORE LOGIC
-function calculateTotals() {
-    let totalEarthMultiplier = 1;
-    let totalLuckMultiplier = 1;
+function resetGame() {
+    const confirm1 = confirm("WARNING: You are about to wipe your progress. This cannot be undone.");
+    if (confirm1) {
+        const confirm2 = confirm("Are you ABSOLUTELY sure? All runes and upgrades will be lost.");
+        if (confirm2) {
+            player = getInitialState();
+            localStorage.removeItem("RunicIncrementalSave");
+            location.reload();
+        }
+    }
+}
 
+// 4. CORE MATH
+function calculateTotals() {
+    let eMult = 1, lMult = 1;
     EarthRunes.forEach(rune => {
-        const owned = player.collection[rune.name] || 0;
-        const level = Math.min(owned, rune.maxMastery);
+        const level = Math.min(player.collection[rune.name] || 0, rune.maxMastery);
         if (level > 0) {
-            totalEarthMultiplier *= (1 + ((rune.earthMult - 1) * (level / rune.maxMastery)));
-            totalLuckMultiplier *= (1 + ((rune.luckMult - 1) * (level / rune.maxMastery)));
+            eMult *= (1 + ((rune.earthMult - 1) * (level / rune.maxMastery)));
+            lMult *= (1 + ((rune.luckMult - 1) * (level / rune.maxMastery)));
         }
     });
+    const finalBase = player.baseEarthPerClick + (player.upgrades.shovelPower * Upgrades.shovelPower.powerPerLevel);
+    return { earthPerClick: finalBase * eMult, earthMult: eMult, luck: player.baseLuck * lMult };
+}
 
-    const bonusPower = (player.upgrades.shovelPower || 0) * Upgrades.shovelPower.powerPerLevel;
-    const finalBaseEarth = player.baseEarthPerClick + bonusPower;
-
-    return {
-        earthPerClick: finalBaseEarth * totalEarthMultiplier,
-        earthMult: totalEarthMultiplier,
-        luck: player.baseLuck * totalLuckMultiplier
-    };
+// 5. ACTIONS
+function dig() {
+    player.earth += calculateTotals().earthPerClick;
+    updateUI();
 }
 
 function buyUpgrade(id) {
     const upg = Upgrades[id];
-    const currentLevel = player.upgrades[id] || 0;
-    if (currentLevel >= upg.maxLevel) return;
-
-    const cost = upg.baseCost + (currentLevel * upg.costAdd);
-    if (player.earth >= cost) {
+    const level = player.upgrades[id] || 0;
+    const cost = upg.baseCost + (level * upg.costAdd);
+    if (level < upg.maxLevel && player.earth >= cost) {
         player.earth -= cost;
-        player.upgrades[id] = currentLevel + 1;
+        player.upgrades[id]++;
         updateUI();
-        saveGame();
+        saveGame(true);
     }
-}
-
-function dig() {
-    const stats = calculateTotals();
-    player.earth += stats.earthPerClick;
-    updateUI();
 }
 
 function roll() {
     if (player.earth < 50) return;
     player.earth -= 50;
     const stats = calculateTotals();
-
-    let sortedRunes = [...EarthRunes].sort((a, b) => b.chance - a.chance);
-    let result = EarthRunes[0];
-
-    for (let rune of sortedRunes) {
-        let rollChance = Math.max(1, rune.chance / stats.luck);
-        if (Math.random() < (1 / rollChance)) {
-            result = rune;
-            break;
-        }
+    let sorted = [...EarthRunes].sort((a, b) => b.chance - a.chance);
+    let won = EarthRunes[0];
+    for (let r of sorted) {
+        if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; }
     }
-
-    player.collection[result.name] = (player.collection[result.name] || 0) + 1;
-    document.getElementById('last-roll-text').innerText = `Rolled: ${result.name}!`;
-    document.getElementById('last-roll-text').style.color = result.color;
+    player.collection[won.name] = (player.collection[won.name] || 0) + 1;
+    document.getElementById('last-roll-text').innerText = `Rolled: ${won.name}!`;
+    document.getElementById('last-roll-text').style.color = won.color;
     updateUI();
-    saveGame(); 
 }
 
-// 5. UI RENDERING
+// 6. UI ENGINE
 function updateUI() {
     const stats = calculateTotals();
-    
     document.getElementById('earth-display').innerText = Math.floor(player.earth).toLocaleString();
     document.getElementById('earth-mult-display').innerText = `Multiplier: ${stats.earthMult.toFixed(2)}x`;
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
@@ -135,43 +126,36 @@ function updateUI() {
     const upgList = document.getElementById('upgrade-list');
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
-        const upg = Upgrades[id];
-        const level = player.upgrades[id] || 0;
-        const isMaxed = level >= upg.maxLevel;
-        const cost = upg.baseCost + (level * upg.costAdd);
-
+        const upg = Upgrades[id], lvl = player.upgrades[id], maxed = lvl >= upg.maxLevel;
         const div = document.createElement('div');
-        div.className = `upgrade-item ${isMaxed ? 'maxed' : ''}`;
+        div.className = `upgrade-item ${maxed ? 'maxed' : ''}`;
         div.onclick = () => buyUpgrade(id);
-        div.innerHTML = `<div><strong>${upg.name}</strong><br><small>Level: ${level}/${upg.maxLevel}</small></div>
-                         <div>${isMaxed ? 'MAXED' : cost.toLocaleString() + ' Earth'}</div>`;
+        div.innerHTML = `<div><strong>${upg.name}</strong><br><small>Level: ${lvl}/${upg.maxLevel}</small></div>
+                         <div>${maxed ? 'MAXED' : (upg.baseCost + lvl * upg.costAdd).toLocaleString() + ' Earth'}</div>`;
         upgList.appendChild(div);
     });
 
     const runeList = document.getElementById('rune-list');
     runeList.innerHTML = "";
-    EarthRunes.forEach(rune => {
-        const owned = player.collection[rune.name] || 0;
-        const level = Math.min(owned, rune.maxMastery);
-        const eBoost = 1 + ((rune.earthMult - 1) * (level / rune.maxMastery));
-        const lBoost = 1 + ((rune.luckMult - 1) * (level / rune.maxMastery));
-
-        const item = document.createElement('div');
-        item.className = "rune-item";
-        item.style.borderLeft = `5px solid ${rune.color}`;
-        item.innerHTML = `<div><span class="rune-name" style="color:${rune.color}">${rune.name}</span>
-                         <span class="rune-mastery">Owned: ${owned} | Mastery: ${level}/${rune.maxMastery}</span></div>
-                         <div class="rune-buffs">x${eBoost.toFixed(2)} Earth<br>x${lBoost.toFixed(2)} Luck</div>`;
-        runeList.appendChild(item);
+    EarthRunes.forEach(r => {
+        const count = player.collection[r.name] || 0, m = Math.min(count, r.maxMastery);
+        const eb = 1 + (r.earthMult - 1) * (m / r.maxMastery), lb = 1 + (r.luckMult - 1) * (m / r.maxMastery);
+        const div = document.createElement('div');
+        div.className = "rune-item"; div.style.borderLeft = `5px solid ${r.color}`;
+        div.innerHTML = `<div><span style="color:${r.color};font-weight:bold">${r.name}</span><br>
+                         <small>Owned: ${count} | Mastery: ${m}/${r.maxMastery}</small></div>
+                         <div class="rune-buffs">x${eb.toFixed(2)} Earth<br>x${lb.toFixed(2)} Luck</div>`;
+        runeList.appendChild(div);
     });
 }
 
-// 6. INITIALIZATION
+// 7. INIT
 document.addEventListener('DOMContentLoaded', () => {
-    document.title = "Runic Incremental";
-    document.getElementById('dig-btn').addEventListener('click', dig);
-    document.getElementById('roll-btn').addEventListener('click', roll);
     loadGame();
     updateUI();
-    setInterval(saveGame, 5000);
+    document.getElementById('dig-btn').addEventListener('click', dig);
+    document.getElementById('roll-btn').addEventListener('click', roll);
+    document.getElementById('manual-save-btn').addEventListener('click', () => saveGame(false));
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+    setInterval(() => saveGame(true), 15000); // Autosave every 15 seconds
 });
