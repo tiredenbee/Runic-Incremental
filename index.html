@@ -1,33 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rune Incremental</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<nav class="tabs">
+    <button class="tab-btn active">Earth</button>
+    <button class="tab-btn">Water (Locked)</button>
+    <button class="tab-btn">Fire (Locked)</button>
+</nav>
 
-    <div class="game-window">
-        <div class="tabs">
-            <button class="tab-btn active">Earth</button>
-            <button class="tab-btn">Inventory</button>
+<main class="game-container">
+    <section class="left-panel">
+        <div class="stat-box">
+            <p class="label">Current Earth</p>
+            <h1 id="earth-display">0</h1>
+            <button id="dig-btn" class="main-button">Dig for Earth</button>
         </div>
 
-        <hr>
-
-        <div id="earth-page" class="page">
-            <div class="stat-container">
-                <p class="label">Current Earth</p>
-                <h1 id="earth-display">0</h1>
-            </div>
-
-            <div class="action-container">
-                <button id="dig-btn" class="main-button">Dig for Earth</button>
+        <div class="upgrade-window">
+            <h3>Upgrades</h3>
+            <div id="upgrade-list">
+                <p class="empty-msg">No upgrades available yet.</p>
             </div>
         </div>
-    </div>
+    </section>
 
-    <script src="script.js"></script>
-</body>
-</html>
+    <section class="right-panel">
+        <div class="roller-box">
+            <h2>Earth Rune Roller</h2>
+            <p class="cost-text">Cost: 50 Earth</p>
+            <button id="roll-btn" class="roll-button">ROLL</button>
+            <div id="roll-result-display">...</div>
+        </div>
+
+        <div class="collection-window">
+            <h3>Earth Runes Collected</h3>
+            <div id="rune-list">
+                </div>
+        </div>
+    </section>
+</main>

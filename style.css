@@ -1,60 +1,59 @@
-/* Core Layout */
-body {
-    background-color: #121212; /* Dark theme */
-    color: #e0e0e0;
-    font-family: 'Inter', 'Segoe UI', sans-serif;
+/* Layout Positioning */
+.tabs {
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+    gap: 20px;
+    padding: 20px;
+    background: #1a1a1a;
 }
 
-.game-window {
-    background-color: #1e1e1e;
-    width: 90%;
-    max-width: 500px;
-    padding: 2rem;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    text-align: center;
-    border: 1px solid #333;
+.game-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 20px;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-/* Typography */
-.label {
-    font-size: 1.2rem;
-    color: #888;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.left-panel, .right-panel {
+    flex: 1; /* Both sides take equal width */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-#earth-display {
-    font-size: 4rem; /* Massive, easy to read */
-    margin: 0;
-    color: #4db6ac; /* Earthy teal */
-}
-
-/* The Button */
-.main-button {
-    background-color: #4db6ac;
-    color: #121212;
-    border: none;
-    padding: 1.5rem 3rem;
-    font-size: 1.5rem;
-    font-weight: bold;
+/* Windows (Boxes) */
+.upgrade-window, .collection-window {
+    background: #252525;
+    border: 1px solid #444;
     border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.1s, background-color 0.2s;
-    margin-top: 2rem;
+    padding: 15px;
+    height: 400px; /* Fixed height with scrolling */
+    overflow-y: auto;
+}
+
+/* UI Elements */
+.main-button, .roll-button {
     width: 100%;
+    padding: 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    border: none;
 }
 
-.main-button:hover {
-    background-color: #80cbc4;
-}
+.main-button { background: #4db6ac; color: #121212; }
+.roll-button { background: #795548; color: white; }
 
-.main-button:active {
-    transform: scale(0.96); /* Visual feedback when clicking */
+.rune-item {
+    background: #333;
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
 }
