@@ -9,7 +9,8 @@ const EarthRunes = [
 ];
 
 const Upgrades = {
-    shovelPower: { name: "Shovel Power", baseCost: 5, costAdd: 5, maxLevel: 25, powerPerLevel: 1 }
+    // maxLevel updated to 24
+    shovelPower: { name: "Shovel Power", baseCost: 5, costAdd: 5, maxLevel: 24, powerPerLevel: 1 }
 };
 
 // 2. PLAYER STATE
@@ -73,7 +74,6 @@ function calculateTotals() {
         const count = player.collection[rune.name] || 0;
         const level = Math.min(count, rune.maxMastery);
         if (level > 0) {
-            // Linear progression of the multiplier bonus based on mastery completion
             eMult *= (1 + ((rune.earthMult - 1) * (level / rune.maxMastery)));
             lMult *= (1 + ((rune.luckMult - 1) * (level / rune.maxMastery)));
         }

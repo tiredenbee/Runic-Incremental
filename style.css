@@ -17,7 +17,7 @@ body {
     padding: 0;
 }
 
-/* Corner Controls */
+/* Corner Controls - Added 40px right padding to clear scroll wheel */
 .top-controls {
     position: fixed;
     top: 0;
@@ -25,8 +25,8 @@ body {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    padding: 15px;
-    pointer-events: none; /* Allows clicking through the container */
+    padding: 15px 40px 15px 15px; 
+    pointer-events: none;
     z-index: 100;
 }
 
@@ -40,6 +40,7 @@ body {
     font-size: 0.9rem;
     letter-spacing: 1px;
     transition: transform 0.1s, filter 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
 .corner-btn.danger { background: var(--danger-color); color: white; }
@@ -50,8 +51,8 @@ body {
 /* Notifications */
 #notification-container {
     position: fixed;
-    top: 60px; /* Below the save button */
-    right: 20px;
+    top: 65px;
+    right: 40px; /* Aligned with the new button position */
     z-index: 1000;
 }
 
@@ -73,7 +74,7 @@ body {
     100% { opacity: 0; transform: translateX(10px); }
 }
 
-/* Standard Layout */
+/* Layout */
 .tabs {
     display: flex;
     justify-content: center;
@@ -81,7 +82,6 @@ body {
     padding: 20px;
     background: var(--card-bg);
     border-bottom: 2px solid var(--border-color);
-    margin-top: 0;
 }
 
 .tab-btn {
