@@ -1,59 +1,134 @@
-/* Layout Positioning */
+:root {
+    --bg-color: #0f0f0f;
+    --card-bg: #1a1a1a;
+    --accent-color: #4db6ac;
+    --text-main: #e0e0e0;
+    --text-dim: #888;
+    --border-color: #333;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* Navigation */
 .tabs {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
     padding: 20px;
-    background: #1a1a1a;
+    background: var(--card-bg);
+    border-bottom: 2px solid var(--border-color);
 }
 
+.tab-btn {
+    padding: 10px 25px;
+    background: #2a2a2a;
+    border: 1px solid var(--border-color);
+    color: var(--text-dim);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.tab-btn.active {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background: #1e2e2c;
+}
+
+.tab-btn.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Main Layout */
 .game-container {
     display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    padding: 20px;
-    gap: 40px;
-    max-width: 1200px;
+    justify-content: center;
+    gap: 30px;
+    padding: 30px;
+    max-width: 1300px;
     margin: 0 auto;
 }
 
-.left-panel, .right-panel {
-    flex: 1; /* Both sides take equal width */
+.panel {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-/* Windows (Boxes) */
-.upgrade-window, .collection-window {
-    background: #252525;
-    border: 1px solid #444;
+/* Cards */
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 25px;
+}
+
+.stat-card { text-align: center; }
+.section-title {
+    margin-top: 0;
+    font-size: 1.4rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    color: var(--accent-color);
+}
+
+/* Large Text */
+#earth-display {
+    font-size: 4rem;
+    margin: 10px 0;
+    color: var(--text-main);
+}
+
+#luck-stat-display {
+    font-size: 1.2rem;
+    color: #ffd700;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.action-btn {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
     border-radius: 12px;
-    padding: 15px;
-    height: 400px; /* Fixed height with scrolling */
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.2s;
+}
+
+.main-btn { background: var(--accent-color); color: #000; }
+.roll-btn { background: #795548; color: #fff; }
+.action-btn:hover { filter: brightness(1.2); }
+.action-btn:active { transform: scale(0.98); }
+
+/* Collection List */
+.collection-window {
+    height: 500px;
     overflow-y: auto;
 }
 
-/* UI Elements */
-.main-button, .roll-button {
-    width: 100%;
-    padding: 20px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 8px;
-    border: none;
-}
-
-.main-button { background: #4db6ac; color: #121212; }
-.roll-button { background: #795548; color: white; }
-
 .rune-item {
-    background: #333;
-    margin-bottom: 8px;
-    padding: 10px;
-    border-radius: 6px;
+    background: #252525;
+    margin-bottom: 12px;
+    padding: 15px;
+    border-radius: 10px;
     display: flex;
     justify-content: space-between;
-    font-size: 0.9rem;
+    align-items: center;
 }
+
+.rune-name { font-weight: bold; font-size: 1.1rem; display: block; }
+.rune-mastery { font-size: 0.8rem; color: var(--text-dim); }
+.rune-buffs { text-align: right; color: var(--accent-color); font-family: monospace; }
+
+#last-roll-text { font-size: 1.2rem; font-weight: bold; }
