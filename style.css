@@ -54,3 +54,25 @@ body { background-color: var(--bg-color); color: var(--text-main); font-family: 
 
 .save-popup { animation: fadeOut 2s forwards; }
 @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.auto-category {
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.category-header {
+    font-size: 1.4rem;
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.automation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+#notification-container { min-height: 20px; }
