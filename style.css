@@ -12,77 +12,27 @@
 body {
     background-color: var(--bg-color);
     color: var(--text-main);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0; padding: 0;
+    overflow-x: hidden;
 }
 
-/* Corner Controls - Added 40px right padding to clear scroll wheel */
-.top-controls {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 40px 15px 15px; 
-    pointer-events: none;
-    z-index: 100;
-}
+/* Tab System */
+.tab-content { display: none; width: 100%; }
+.tab-content.active { display: block; }
+.layout-wrapper { display: flex; gap: 30px; justify-content: center; }
 
-.corner-btn {
-    pointer-events: auto;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    transition: transform 0.1s, filter 0.2s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-
-.corner-btn.danger { background: var(--danger-color); color: white; }
-.corner-btn.success { background: var(--accent-color); color: black; }
-.corner-btn:hover { filter: brightness(1.2); }
-.corner-btn:active { transform: scale(0.95); }
-
-/* Notifications */
-#notification-container {
-    position: fixed;
-    top: 65px;
-    right: 40px; /* Aligned with the new button position */
-    z-index: 1000;
-}
-
-.save-popup {
-    background: var(--accent-color);
-    color: #000;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    animation: fadeOut 2.5s forwards;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
-
-@keyframes fadeOut {
-    0% { opacity: 0; transform: translateX(20px); }
-    10% { opacity: 1; transform: translateX(0); }
-    80% { opacity: 1; }
-    100% { opacity: 0; transform: translateX(10px); }
-}
-
-/* Layout */
 .tabs {
     display: flex;
     justify-content: center;
-    gap: 15px;
+    align-items: center;
+    gap: 50px; /* Space between Main and Utility groups */
     padding: 20px;
     background: var(--card-bg);
     border-bottom: 2px solid var(--border-color);
 }
+
+.nav-group { display: flex; gap: 15px; }
 
 .tab-btn {
     padding: 10px 25px;
@@ -92,23 +42,46 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
+    transition: 0.2s;
 }
 
-.tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); }
+.tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); background: #1e2e2c; }
+.tab-btn.hidden { display: none; }
+.tab-btn.locked { opacity: 0.4; cursor: not-allowed; }
 
-.game-container {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    padding: 30px;
-    max-width: 1300px;
-    margin: 0 auto;
+/* Corner Controls */
+.top-controls {
+    position: fixed; top: 0; left: 0; width: 100%;
+    display: flex; justify-content: space-between;
+    padding: 15px 40px 15px 15px; pointer-events: none; z-index: 100;
+}
+.corner-btn {
+    pointer-events: auto; padding: 12px 20px; border: none; border-radius: 6px;
+    font-weight: bold; cursor: pointer; font-size: 0.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.corner-btn.danger { background: var(--danger-color); color: white; }
+.corner-btn.success { background: var(--accent-color); color: black; }
+
+/* Notification */
+#notification-container { position: fixed; top: 65px; right: 40px; z-index: 1000; }
+.save-popup {
+    background: var(--accent-color); color: #000; padding: 10px 20px;
+    border-radius: 8px; font-weight: bold; margin-bottom: 10px;
+    animation: fadeOut 2.5s forwards; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 
+@keyframes fadeOut {
+    0% { opacity: 0; transform: translateX(20px); }
+    10% { opacity: 1; transform: translateX(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(10px); }
+}
+
+/* Panels */
+.game-container { padding: 30px; max-width: 1400px; margin: 0 auto; }
 .panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
 .glass-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; }
-.stat-card, .roller-card { text-align: center; }
-.section-title { margin: 0 0 10px 0; font-size: 1.4rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--accent-color); }
+.full-width { width: 100%; text-align: center; }
 
 #earth-display { font-size: 4rem; margin: 10px 0 5px 0; }
 .stat-subtext { font-size: 1.2rem; color: var(--accent-color); margin-bottom: 20px; }
@@ -118,8 +91,9 @@ body {
 .main-btn { background: var(--accent-color); color: #000; }
 .roll-btn { background: #795548; color: #fff; }
 
-.upgrade-window, .collection-window { height: 450px; overflow-y: auto; }
+.upgrade-window, .collection-window { height: 500px; overflow-y: auto; }
 .upgrade-item, .rune-item { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-.upgrade-item { cursor: pointer; }
+.upgrade-item { cursor: pointer; border: 1px solid transparent; }
+.upgrade-item:hover { border-color: var(--accent-color); }
 .upgrade-item.maxed { opacity: 0.6; cursor: default; }
 .rune-buffs { text-align: right; color: var(--accent-color); font-family: monospace; font-size: 0.85rem; }

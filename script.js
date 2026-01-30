@@ -12,7 +12,11 @@ const Upgrades = {
     shovelPower: { name: "Shovel Power", baseCost: 5, costAdd: 5, maxLevel: 24, powerPerLevel: 1, hidden: false },
     pickaxe: { name: "Pickaxe", baseCost: 250, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: false },
     pickaxeStrength: { name: "Pickaxe Strength", baseCost: 25, costAdd: 25, maxLevel: 24, powerPerLevel: 5, hidden: true },
-    drill: { name: "Drill", baseCost: 750, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: true }
+    drill: { name: "Drill", baseCost: 750, costAdd: 0, maxLevel: 1, powerPerLevel: 0, multAdd: 1, hidden: true },
+    // NEW LAYER
+    drillStrength: { name: "Drill Strength", baseCost: 125, costAdd: 125, maxLevel: 24, powerPerLevel: 25, hidden: true },
+    runeLuck: { name: "Rune Luck", baseCost: 1000, costAdd: 1000, maxLevel: 24, luckPerLevel: 0.1, hidden: true },
+    automation: { name: "Automation", baseCost: 100000, costAdd: 0, maxLevel: 1, hidden: true }
 };
 
 // 2. PLAYER STATE
@@ -21,14 +25,15 @@ function getInitialState() {
         earth: 0,
         baseEarthPerClick: 1,
         baseLuck: 1,
-        upgrades: { shovelPower: 0, pickaxe: 0, pickaxeStrength: 0, drill: 0 },
-        collection: {}
+        upgrades: { shovelPower: 0, pickaxe: 0, pickaxeStrength: 0, drill: 0, drillStrength: 0, runeLuck: 0, automation: 0 },
+        collection: {},
+        automationUnlocked: false
     };
 }
 
 let player = getInitialState();
 
-// 3. UI & SYSTEM FUNCTIONS
+// 3. SYSTEM FUNCTIONS
 function showNotification(text) {
     const container = document.getElementById('notification-container');
     const popup = document.createElement('div');
@@ -56,14 +61,14 @@ function loadGame() {
 }
 
 function resetGame() {
-    if (confirm("WARNING: Wipe progress?") && confirm("Are you sure?")) {
+    if (confirm("Reset everything?") && confirm("Last chance. Wipe?")) {
         player = getInitialState();
         localStorage.removeItem("RunicIncrementalSave");
         location.reload();
     }
 }
 
-// 4. CORE MATH
+// 4. MATH
 function calculateTotals() {
     let runeEMult = 1, runeLMult = 1;
     EarthRunes.forEach(rune => {
@@ -74,18 +79,24 @@ function calculateTotals() {
         }
     });
 
-    const shovelBonus = player.upgrades.shovelPower * Upgrades.shovelPower.powerPerLevel;
-    const pickaxeStrBonus = player.upgrades.pickaxeStrength * Upgrades.pickaxeStrength.powerPerLevel;
-    const totalBasePower = player.baseEarthPerClick + shovelBonus + pickaxeStrBonus;
+    // Additive Power
+    const sPow = player.upgrades.shovelPower * Upgrades.shovelPower.powerPerLevel;
+    const pPow = player.upgrades.pickaxeStrength * Upgrades.pickaxeStrength.powerPerLevel;
+    const dPow = player.upgrades.drillStrength * Upgrades.drillStrength.powerPerLevel;
+    const totalBasePower = player.baseEarthPerClick + sPow + pPow + dPow;
 
+    // Multipliers
     let upgradeMult = 1;
     if (player.upgrades.pickaxe > 0) upgradeMult += Upgrades.pickaxe.multAdd;
     if (player.upgrades.drill > 0) upgradeMult += Upgrades.drill.multAdd;
 
+    // Luck Multipliers (Base 1 + Upgrade Bonus)
+    let totalLuckMult = player.baseLuck + (player.upgrades.runeLuck * Upgrades.runeLuck.luckPerLevel);
+
     return { 
         earthPerClick: totalBasePower * upgradeMult * runeEMult, 
         earthMult: upgradeMult * runeEMult, 
-        luck: player.baseLuck * runeLMult 
+        luck: totalLuckMult * runeLMult 
     };
 }
 
@@ -103,10 +114,9 @@ function buyUpgrade(id) {
     if (level < upg.maxLevel && player.earth >= cost) {
         player.earth -= cost;
         player.upgrades[id]++;
-        if (id === "pickaxe") {
-            Upgrades.pickaxeStrength.hidden = false;
-            Upgrades.drill.hidden = false;
-        }
+        
+        if (id === "automation") player.automationUnlocked = true;
+        
         updateUI();
         saveGame(true);
     }
@@ -135,11 +145,22 @@ function updateUI() {
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
     document.getElementById('dig-btn').innerText = `Dig for Earth (+${stats.earthPerClick.toLocaleString(undefined, {maximumFractionDigits: 1})})`;
 
+    // Visibility Logic
     if (player.upgrades.pickaxe > 0) {
         Upgrades.pickaxeStrength.hidden = false;
         Upgrades.drill.hidden = false;
     }
+    if (player.upgrades.drill > 0) {
+        Upgrades.drillStrength.hidden = false;
+        Upgrades.runeLuck.hidden = false;
+        Upgrades.automation.hidden = false;
+    }
+    
+    // Tab visibility
+    const autoTabBtn = document.getElementById('auto-tab-btn');
+    if (player.automationUnlocked) autoTabBtn.classList.remove('hidden');
 
+    // Upgrade List Rendering
     const upgList = document.getElementById('upgrade-list');
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
@@ -155,32 +176,45 @@ function updateUI() {
         upgList.appendChild(div);
     });
 
+    // Rune List Rendering
     const runeList = document.getElementById('rune-list');
     runeList.innerHTML = "";
     EarthRunes.forEach(r => {
         const count = player.collection[r.name] || 0;
-        const masteryLevel = Math.min(count, r.maxMastery);
+        const mLevel = Math.min(count, r.maxMastery);
         const currentChance = Math.max(1, r.chance / stats.luck).toLocaleString(undefined, {maximumFractionDigits: 1});
-        const eb = 1 + (r.earthMult - 1) * (masteryLevel / r.maxMastery);
-        const lb = 1 + (r.luckMult - 1) * (masteryLevel / r.maxMastery);
-        
+        const eb = 1 + (r.earthMult - 1) * (mLevel / r.maxMastery);
+        const lb = 1 + (r.luckMult - 1) * (mLevel / r.maxMastery);
         const div = document.createElement('div');
-        div.className = "rune-item"; 
-        div.style.borderLeft = `5px solid ${r.color}`;
-        div.innerHTML = `
-            <div>
-                <span style="color:${r.color}; font-weight:bold">${r.name}</span> 
-                <span style="font-size:0.75rem; opacity:0.8;">[${r.rarity}]</span><br>
-                <small>Owned: ${count} | <span style="color:var(--luck-color)">1 in ${currentChance}</span></small>
-            </div>
-            <div class="rune-buffs">x${eb.toFixed(2)} Earth<br>x${lb.toFixed(2)} Luck</div>`;
+        div.className = "rune-item"; div.style.borderLeft = `5px solid ${r.color}`;
+        div.innerHTML = `<div><span style="color:${r.color};font-weight:bold">${r.name}</span> <span style="font-size:0.7rem;opacity:0.7">[${r.rarity}]</span><br>
+                         <small>Owned: ${count} | <span style="color:var(--luck-color)">1 in ${currentChance}</span></small></div>
+                         <div class="rune-buffs">x${eb.toFixed(2)} Earth<br>x${lb.toFixed(2)} Luck</div>`;
         runeList.appendChild(div);
     });
 }
 
-// 7. INIT
+// 7. TAB SWITCHING
+function setupTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.classList.contains('locked')) return;
+            
+            // UI Toggle
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        });
+    });
+}
+
+// 8. INIT
 document.addEventListener('DOMContentLoaded', () => {
     loadGame();
+    setupTabs();
     updateUI();
     document.getElementById('dig-btn').addEventListener('click', dig);
     document.getElementById('roll-btn').addEventListener('click', roll);
