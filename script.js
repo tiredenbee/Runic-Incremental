@@ -1,7 +1,7 @@
 // --- DATA ---
 const EarthRunes = [
     { name: "Cracked Pebble",   rarity: "Basic",       chance: 2,     maxMastery: 200,  earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
-    { name: "Smooth Basalt",    rarity: "Basic",       chance: 10,    maxMastery: 200,  earthMult: 3,   luckMult: 2,    color: "#505050" },
+    { name: "Smooth Basalt",    rarity: "Basic",       chance: 10,    maxMastery: 200,  earthMult: 1,   bulkAdd: 1,     maxBulk: 5, color: "#505050" },
     { name: "Sedimentary Slab", rarity: "Regular",     chance: 100,   maxMastery: 150,  earthMult: 5,   luckMult: 2,    color: "#8c6e5a" },
     { name: "Geode Core",       rarity: "Rare",        chance: 250,   maxMastery: 100,  earthMult: 5,   luckMult: 3,    color: "#b464ff" },
     { name: "Tectonic Slab",    rarity: "Exceptional", chance: 2500,  maxMastery: 50,   earthMult: 10,  luckMult: 5,    color: "#ff6400" },
@@ -59,13 +59,13 @@ let player = {
 
 // --- SYSTEM ---
 function saveGame(isAuto = false) {
-    localStorage.setItem("RunicIncremental_SaveV5", JSON.stringify(player));
+    localStorage.setItem("RunicIncremental_SaveV6", JSON.stringify(player));
     const container = document.getElementById('notification-container');
-    container.innerHTML = `<span class="save-popup">${isAuto ? 'Auto-saved' : 'Game Saved!'}</span>`;
+    if (container) container.innerHTML = `<span class="save-popup">${isAuto ? 'Auto-saved' : 'Game Saved!'}</span>`;
 }
 
 function loadGame() {
-    const saved = localStorage.getItem("RunicIncremental_SaveV5");
+    const saved = localStorage.getItem("RunicIncremental_SaveV6");
     if (saved) {
         const parsed = JSON.parse(saved);
         player = JSON.parse(JSON.stringify(Object.assign({}, player, parsed))); 
@@ -74,7 +74,7 @@ function loadGame() {
 
 // --- MATH ---
 function calculateTotals(element) {
-    let rMult = 1, rLMult = 1;
+    let rMult = 1, rLMult = 1, rBulk = 1;
     const runes = element === 'earth' ? EarthRunes : WaterRunes;
     const coll = player.collection[element];
 
@@ -82,9 +82,14 @@ function calculateTotals(element) {
         const count = coll[r.name] || 0;
         const m = Math.min(count, r.maxMastery);
         if (m > 0) {
-            const multVal = element === 'earth' ? r.earthMult : r.waterMult;
-            rMult *= (1 + ((multVal - 1) * (m / r.maxMastery)));
-            rLMult *= (1 + ((r.luckMult - 1) * (m / r.maxMastery)));
+            if (r.bulkAdd) {
+                // Additive bulk logic: count * bulkAdd, capped at maxBulk
+                rBulk += Math.min(r.maxBulk, count * r.bulkAdd);
+            } else {
+                const multVal = element === 'earth' ? r.earthMult : r.waterMult;
+                rMult *= (1 + ((multVal - 1) * (m / r.maxMastery)));
+                rLMult *= (1 + ((r.luckMult - 1) * (m / r.maxMastery)));
+            }
         }
     });
 
@@ -92,12 +97,12 @@ function calculateTotals(element) {
         const base = 1 + (player.upgrades.earth.shovelPower * 1) + (player.upgrades.earth.pickaxeStrength * 5) + (player.upgrades.earth.drillStrength * 25);
         const mult = 1 + (player.upgrades.earth.pickaxe > 0 ? 1 : 0) + (player.upgrades.earth.drill > 0 ? 1 : 0);
         const luck = (1 + (player.upgrades.earth.runeLuck * 0.01)) * rLMult;
-        return { gain: base * mult * rMult, luck: luck, mult: mult * rMult };
+        return { gain: base * mult * rMult, luck: luck, mult: mult * rMult, bulk: Math.floor(rBulk) };
     } else {
         const base = 1 + (player.upgrades.water.bucketSize * 1);
         const mult = 1 + (player.upgrades.water.wellDepth > 0 ? 1 : 0);
         const luck = (1 + (player.upgrades.water.filtration * 0.02)) * rLMult;
-        return { gain: base * mult * rMult, luck: luck, mult: mult * rMult };
+        return { gain: base * mult * rMult, luck: luck, mult: mult * rMult, bulk: Math.floor(rBulk) };
     }
 }
 
@@ -109,6 +114,7 @@ function updateUI() {
     document.getElementById('earth-display').innerText = Math.floor(player.earth).toLocaleString();
     document.getElementById('earth-mult-display').innerText = `Multiplier: ${eStats.mult.toFixed(2)}x`;
     document.getElementById('luck-stat-display').innerText = `Luck: ${eStats.luck.toFixed(2)}x`;
+    document.getElementById('bulk-stat-display').innerText = `Bulk: ${eStats.bulk}`;
     document.getElementById('dig-btn').innerText = `Dig (+${eStats.gain.toFixed(1)})`;
 
     if (player.waterUnlocked) {
@@ -116,14 +122,13 @@ function updateUI() {
         document.getElementById('water-display').innerText = Math.floor(player.water).toLocaleString();
         document.getElementById('water-mult-display').innerText = `Multiplier: ${wStats.mult.toFixed(2)}x`;
         document.getElementById('water-luck-display').innerText = `Luck: ${wStats.luck.toFixed(2)}x`;
+        document.getElementById('water-bulk-display').innerText = `Bulk: ${wStats.bulk}`;
         document.getElementById('gather-water-btn').innerText = `Gather (+${wStats.gain.toFixed(1)})`;
     }
 
-    // Logic for hiding/showing earth upgrades
     if (player.upgrades.earth.pickaxe > 0) { Upgrades.earth.pickaxeStrength.hidden = false; Upgrades.earth.drill.hidden = false; }
     if (player.upgrades.earth.drill > 0) { Upgrades.earth.drillStrength.hidden = false; Upgrades.earth.runeLuck.hidden = false; Upgrades.earth.automation.hidden = false; }
     if (player.upgrades.earth.automation > 0) { Upgrades.earth.unlockWater.hidden = false; player.automationUnlocked = true; }
-    
     if (player.automationUnlocked) document.getElementById('auto-tab-btn').classList.remove('hidden');
 
     renderUpgrades('earth', 'upgrade-list');
@@ -133,7 +138,7 @@ function updateUI() {
     renderAutomation();
 }
 
-function renderUpgrades(element, containerId, statsLuck) {
+function renderUpgrades(element, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = "";
@@ -167,92 +172,12 @@ function renderRunes(element, containerId, luck) {
         const count = player.collection[element][r.name] || 0;
         const disc = count > 0;
         const m = Math.min(count, r.maxMastery);
-        const multVal = element === 'earth' ? r.earthMult : r.waterMult;
-        const currentMult = 1 + ((multVal - 1) * (m / r.maxMastery));
-        const currentLuck = 1 + ((r.luckMult - 1) * (m / r.maxMastery));
-
-        const div = document.createElement('div');
-        div.className = `rune-item ${disc ? '' : 'undiscovered'}`;
-        div.style.borderLeft = disc ? `5px solid ${r.color}` : `5px solid #333`;
-        div.innerHTML = `<div><span style="color:${disc ? r.color : '#555'}">${disc ? r.name : '???'}</span> [${disc ? r.rarity : '???'}]<br>
-                        <small>Owned: ${count} | 1 in ${disc ? (r.chance / luck).toFixed(1) : '???'}</small></div>
-                        <div class="rune-buffs" style="visibility:${disc ? 'visible' : 'hidden'}">
-                            x${currentMult.toFixed(2)} Power<br>x${currentLuck.toFixed(2)} Luck
-                        </div>`;
-        container.appendChild(div);
-    });
-}
-
-function renderAutomation() {
-    const container = document.getElementById('automation-categories');
-    container.innerHTML = "";
-    
-    Object.keys(AutoUpgrades).forEach(element => {
-        // Only show category if the element is unlocked (Earth is always unlocked)
-        if (element !== 'earth' && !player[`${element}Unlocked`]) return;
-
-        const catDiv = document.createElement('div');
-        catDiv.className = "auto-category";
-        catDiv.innerHTML = `<div class="category-header">${element} Automation</div>`;
         
-        const grid = document.createElement('div');
-        grid.className = "automation-grid";
-        
-        Object.keys(AutoUpgrades[element]).forEach(id => {
-            const upg = AutoUpgrades[element][id];
-            const owned = player.autoPurchased[element][id];
-            const div = document.createElement('div');
-            div.className = `upgrade-item ${owned ? 'maxed' : ''}`;
-            div.onclick = () => {
-                // Automation is always bought with Earth (universal currency for tech)
-                if (!owned && player.earth >= upg.cost) {
-                    player.earth -= upg.cost;
-                    player.autoPurchased[element][id] = true;
-                    updateUI();
-                }
-            };
-            div.innerHTML = `<div><strong>${upg.name}</strong><br><small>${upg.desc}</small></div>
-                             <div>${owned ? 'ACTIVE' : upg.cost.toLocaleString() + " Earth"}</div>`;
-            grid.appendChild(div);
-        });
-        
-        catDiv.appendChild(grid);
-        container.appendChild(catDiv);
-    });
-}
-
-// --- LOOPS ---
-document.getElementById('dig-btn').onclick = () => { player.earth += calculateTotals('earth').gain; updateUI(); };
-document.getElementById('gather-water-btn').onclick = () => { player.water += calculateTotals('water').gain; updateUI(); };
-
-function roll(element) {
-    if (player[element] < 50) return;
-    player[element] -= 50;
-    const stats = calculateTotals(element);
-    const runes = element === 'earth' ? EarthRunes : WaterRunes;
-    let won = runes[0];
-    let sorted = [...runes].sort((a,b) => b.chance - a.chance);
-    for (let r of sorted) { if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; } }
-    player.collection[element][won.name] = (player.collection[element][won.name] || 0) + 1;
-    updateUI();
-}
-
-document.getElementById('roll-btn').onclick = () => roll('earth');
-document.getElementById('water-roll-btn').onclick = () => roll('water');
-
-setInterval(() => {
-    if (player.autoPurchased.earth.autoDig) player.earth += (calculateTotals('earth').gain / 5);
-    if (player.autoPurchased.water.autoGather) player.water += (calculateTotals('water').gain / 5);
-    updateUI();
-}, 200);
-
-setInterval(() => saveGame(true), 30000);
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = () => { if(!btn.classList.contains('locked')) { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); } };
-});
-
-document.getElementById('manual-save-btn').onclick = () => saveGame(false);
-document.getElementById('reset-btn').onclick = () => { if(confirm("Wipe progress?")) { localStorage.clear(); location.reload(); } };
-
-window.onload = () => { loadGame(); updateUI(); };
+        let boostText = "";
+        if (r.bulkAdd) {
+            const currentBulk = Math.min(r.maxBulk, count * r.bulkAdd);
+            boostText = `+${currentBulk} Bulk`;
+        } else {
+            const multVal = element === 'earth' ? r.earthMult : r.waterMult;
+            const currentMult = 1 + ((multVal - 1) * (m / r.maxMastery));
+            const currentLuck = 1 + ((r.luckMult - 1) * (m / r.maxMastery));
