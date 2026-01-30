@@ -1,3 +1,4 @@
+// 1. DATA DATABASE
 const EarthRunes = [
     { name: "Cracked Pebble",   chance: 2,     maxMastery: 1000, earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
     { name: "Smooth Basalt",    chance: 10,    maxMastery: 1000, earthMult: 3,   luckMult: 2,    color: "#505050" },
@@ -7,35 +8,81 @@ const EarthRunes = [
     { name: "Gaia's Heart",     chance: 15000, maxMastery: 100,  earthMult: 20,  luckMult: 10,   color: "#32ff96" }
 ];
 
+const Upgrades = {
+    shovelPower: {
+        name: "Shovel Power",
+        baseCost: 10,
+        costAdd: 5,
+        maxLevel: 25,
+        powerPerLevel: 1
+    }
+};
+
+// 2. PLAYER STATE
 let player = {
     earth: 0,
     baseEarthPerClick: 1,
     baseLuck: 1,
+    upgrades: {
+        shovelPower: 0
+    },
     collection: {}
 };
 
+// 3. SAVE/LOAD LOGIC
+function saveGame() {
+    localStorage.setItem("RunicIncrementalSave", JSON.stringify(player));
+}
+
+function loadGame() {
+    const savedData = localStorage.getItem("RunicIncrementalSave");
+    if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        player = Object.assign(player, parsedData);
+    }
+}
+
+// 4. CORE LOGIC
 function calculateTotals() {
     let totalEarthMultiplier = 1;
     let totalLuckMultiplier = 1;
 
+    // Apply Runes (Multiplicative)
     EarthRunes.forEach(rune => {
         const owned = player.collection[rune.name] || 0;
         const level = Math.min(owned, rune.maxMastery);
-        
         if (level > 0) {
-            const currentEarthBoost = 1 + ((rune.earthMult - 1) * (level / rune.maxMastery));
-            const currentLuckBoost = 1 + ((rune.luckMult - 1) * (level / rune.maxMastery));
-
-            totalEarthMultiplier *= currentEarthBoost;
-            totalLuckMultiplier *= currentLuckBoost;
+            totalEarthMultiplier *= (1 + ((rune.earthMult - 1) * (level / rune.maxMastery)));
+            totalLuckMultiplier *= (1 + ((rune.luckMult - 1) * (level / rune.maxMastery)));
         }
     });
 
+    // Apply Upgrades (Additive to Base)
+    const bonusPower = player.upgrades.shovelPower * Upgrades.shovelPower.powerPerLevel;
+    const finalBaseEarth = player.baseEarthPerClick + bonusPower;
+
     return {
-        earthPerClick: player.baseEarthPerClick * totalEarthMultiplier,
+        earthPerClick: finalBaseEarth * totalEarthMultiplier,
         earthMult: totalEarthMultiplier,
         luck: player.baseLuck * totalLuckMultiplier
     };
+}
+
+function buyUpgrade(id) {
+    const upg = Upgrades[id];
+    const currentLevel = player.upgrades[id];
+    
+    if (currentLevel >= upg.maxLevel) return;
+
+    // Linear cost: Base + (CurrentLevel * CostAdd)
+    const cost = upg.baseCost + (currentLevel * upg.costAdd);
+
+    if (player.earth >= cost) {
+        player.earth -= cost;
+        player.upgrades[id]++;
+        updateUI();
+        saveGame();
+    }
 }
 
 function dig() {
@@ -64,8 +111,10 @@ function roll() {
     document.getElementById('last-roll-text').innerText = `Rolled: ${result.name}!`;
     document.getElementById('last-roll-text').style.color = result.color;
     updateUI();
+    saveGame(); 
 }
 
+// 5. UI RENDERING
 function updateUI() {
     const stats = calculateTotals();
     
@@ -74,9 +123,33 @@ function updateUI() {
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
     document.getElementById('dig-btn').innerText = `Dig for Earth (+${stats.earthPerClick.toLocaleString(undefined, {maximumFractionDigits: 1})})`;
 
-    const list = document.getElementById('rune-list');
-    list.innerHTML = "";
+    // Render Upgrades
+    const upgList = document.getElementById('upgrade-list');
+    upgList.innerHTML = "";
+    Object.keys(Upgrades).forEach(id => {
+        const upg = Upgrades[id];
+        const level = player.upgrades[id];
+        const isMaxed = level >= upg.maxLevel;
+        const cost = upg.baseCost + (level * upg.costAdd);
 
+        const div = document.createElement('div');
+        div.className = `upgrade-item ${isMaxed ? 'maxed' : ''}`;
+        div.onclick = () => buyUpgrade(id);
+        div.innerHTML = `
+            <div>
+                <strong>${upg.name}</strong><br>
+                <small>Level: ${level}/${upg.maxLevel}</small>
+            </div>
+            <div>
+                ${isMaxed ? 'MAXED' : cost.toLocaleString() + ' Earth'}
+            </div>
+        `;
+        upgList.appendChild(div);
+    });
+
+    // Render Runes
+    const runeList = document.getElementById('rune-list');
+    runeList.innerHTML = "";
     EarthRunes.forEach(rune => {
         const owned = player.collection[rune.name] || 0;
         const level = Math.min(owned, rune.maxMastery);
@@ -96,10 +169,17 @@ function updateUI() {
                 x${lBoost.toFixed(2)} Luck
             </div>
         `;
-        list.appendChild(item);
+        runeList.appendChild(item);
     });
 }
 
-document.getElementById('dig-btn').addEventListener('click', dig);
-document.getElementById('roll-btn').addEventListener('click', roll);
-updateUI();
+// 6. INITIALIZATION
+document.addEventListener('DOMContentLoaded', () => {
+    document.title = "Runic Incremental";
+    document.getElementById('dig-btn').addEventListener('click', dig);
+    document.getElementById('roll-btn').addEventListener('click', roll);
+
+    loadGame();
+    updateUI();
+    setInterval(saveGame, 5000);
+});

@@ -112,10 +112,26 @@ body {
 .roll-btn { background: #795548; color: #fff; }
 .action-btn:active { transform: scale(0.98); }
 
-.collection-window {
-    height: 500px;
+/* Upgrade & Collection Lists */
+.upgrade-window, .collection-window {
+    height: 450px;
     overflow-y: auto;
 }
+
+.upgrade-item {
+    background: #252525;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.upgrade-item:hover { border-color: var(--accent-color); }
+.upgrade-item.maxed { opacity: 0.6; cursor: default; border-color: var(--text-dim); }
 
 .rune-item {
     background: #252525;
