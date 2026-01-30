@@ -1,3 +1,4 @@
+// --- DATA DATABASE ---
 const EarthRunes = [
     { name: "Cracked Pebble",   rarity: "Basic",       chance: 2,     maxMastery: 200,  earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
     { name: "Smooth Basalt",    rarity: "Basic",       chance: 10,    maxMastery: 200,  earthMult: 3,   luckMult: 2,    color: "#505050" },
@@ -23,6 +24,7 @@ const AutoUpgrades = {
     autoUpgrade: { name: "Auto-Upgrade", cost: 500000, desc: "Buys cheapest Earth upgrade." }
 };
 
+// --- CORE PLAYER STATE ---
 let player = {
     earth: 0,
     upgrades: { shovelPower: 0, pickaxe: 0, pickaxeStrength: 0, drill: 0, drillStrength: 0, runeLuck: 0, automation: 0, unlockWater: 0 },
@@ -32,6 +34,34 @@ let player = {
     waterUnlocked: false
 };
 
+// --- SAVING SYSTEM ---
+function saveGame() {
+    localStorage.setItem("RunicIncremental_SaveV3", JSON.stringify(player));
+    showNotification("Game Saved!");
+}
+
+function loadGame() {
+    const saved = localStorage.getItem("RunicIncremental_SaveV3");
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        // Deep merge to ensure new features (like waterUnlocked) exist in old saves
+        player = { ...player, ...parsed };
+        player.upgrades = { ...player.upgrades, ...parsed.upgrades };
+        player.autoPurchased = { ...player.autoPurchased, ...parsed.autoPurchased };
+        updateUI();
+    }
+}
+
+function showNotification(msg) {
+    const container = document.getElementById('notification-container');
+    const note = document.createElement('div');
+    note.className = 'save-popup'; // Ensure this class is in your CSS
+    note.innerText = msg;
+    container.appendChild(note);
+    setTimeout(() => note.remove(), 2000);
+}
+
+// --- MATH ---
 function calculateTotals() {
     let rEMult = 1, rLMult = 1;
     EarthRunes.forEach(r => {
@@ -50,6 +80,7 @@ function calculateTotals() {
     return { gain: base * mult * rEMult, luck: luck, mult: mult * rEMult };
 }
 
+// --- UI ENGINE ---
 function updateUI() {
     const stats = calculateTotals();
     
@@ -58,7 +89,7 @@ function updateUI() {
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
     document.getElementById('dig-btn').innerText = `Dig (+${stats.gain.toFixed(1)})`;
 
-    // Hidden logic
+    // Unlock Visibility Logic
     if (player.upgrades.pickaxe > 0) { Upgrades.pickaxeStrength.hidden = false; Upgrades.drill.hidden = false; }
     if (player.upgrades.drill > 0) { Upgrades.drillStrength.hidden = false; Upgrades.runeLuck.hidden = false; Upgrades.automation.hidden = false; }
     if (player.upgrades.automation > 0) { Upgrades.unlockWater.hidden = false; }
@@ -66,7 +97,7 @@ function updateUI() {
     if (player.automationUnlocked) document.getElementById('auto-tab-btn').classList.remove('hidden');
     if (player.waterUnlocked) document.getElementById('water-tab-btn').classList.remove('locked');
 
-    // Upgrades
+    // Render Upgrades
     const upgList = document.getElementById('upgrade-list');
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
@@ -90,7 +121,7 @@ function updateUI() {
         upgList.appendChild(div);
     });
 
-    // Automation
+    // Render Automation
     const autoList = document.getElementById('automation-upgrade-list');
     autoList.innerHTML = "";
     Object.keys(AutoUpgrades).forEach(id => {
@@ -110,14 +141,12 @@ function updateUI() {
         autoList.appendChild(div);
     });
 
-    // Runes - Fixed Display Logic
+    // Render Runes
     const runeList = document.getElementById('rune-list');
     runeList.innerHTML = "";
     EarthRunes.forEach(r => {
         const count = player.collection[r.name] || 0;
         const disc = count > 0;
-        
-        // Calculate current boost based on Mastery Mastery
         const m = Math.min(count, r.maxMastery);
         const currentEMult = 1 + ((r.earthMult - 1) * (m / r.maxMastery));
         const currentLMult = 1 + ((r.luckMult - 1) * (m / r.maxMastery));
@@ -134,28 +163,62 @@ function updateUI() {
     });
 }
 
-// Controls
-document.getElementById('dig-btn').onclick = () => { player.earth += calculateTotals().gain; updateUI(); };
+// --- CONTROLS ---
+document.getElementById('dig-btn').onclick = () => { 
+    player.earth += calculateTotals().gain; 
+    updateUI(); 
+};
+
 document.getElementById('roll-btn').onclick = () => {
     if (player.earth >= 50) {
         player.earth -= 50;
         const stats = calculateTotals();
         let won = EarthRunes[0];
         let sorted = [...EarthRunes].sort((a,b) => b.chance - a.chance);
-        for (let r of sorted) { if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; } }
+        for (let r of sorted) { 
+            if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { 
+                won = r; 
+                break; 
+            } 
+        }
         player.collection[won.name] = (player.collection[won.name] || 0) + 1;
         updateUI();
     }
 };
 
+// Automation Tick
 setInterval(() => {
-    if (player.autoPurchased.autoDig) { player.earth += (calculateTotals().gain / 5); updateUI(); }
+    if (player.autoPurchased.autoDig) {
+        player.earth += (calculateTotals().gain / 5);
+        updateUI();
+    }
 }, 200);
 
+// Auto-Save every 30 seconds
+setInterval(saveGame, 30000);
+
+// Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = () => { if(!btn.classList.contains('locked')) { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); } };
+    btn.onclick = () => {
+        if(!btn.classList.contains('locked')) {
+            document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        }
+    };
 });
 
-document.getElementById('reset-btn').onclick = () => { if(confirm("Wipe progress?")) { localStorage.clear(); location.reload(); } };
+// Manual Controls
+document.getElementById('manual-save-btn').onclick = saveGame;
+document.getElementById('reset-btn').onclick = () => {
+    if(confirm("Wipe ALL progress?")) {
+        localStorage.clear();
+        location.reload();
+    }
+};
 
-updateUI();
+// --- INITIALIZE ---
+window.onload = () => {
+    loadGame();
+    updateUI();
+};
