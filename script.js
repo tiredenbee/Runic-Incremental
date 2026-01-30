@@ -1,15 +1,14 @@
 // 1. DATA DATABASE
 const EarthRunes = [
-    { name: "Cracked Pebble",   chance: 2,     maxMastery: 1000, earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
-    { name: "Smooth Basalt",    chance: 10,    maxMastery: 1000, earthMult: 3,   luckMult: 2,    color: "#505050" },
-    { name: "Sedimentary Slab", chance: 100,   maxMastery: 750,  earthMult: 5,   luckMult: 2,    color: "#8c6e5a" },
-    { name: "Geode Core",       chance: 250,   maxMastery: 500,  earthMult: 5,   luckMult: 3,    color: "#b464ff" },
-    { name: "Tectonic Slab",    chance: 2500,  maxMastery: 250,  earthMult: 10,  luckMult: 5,    color: "#ff6400" },
-    { name: "Gaia's Heart",     chance: 15000, maxMastery: 100,  earthMult: 20,  luckMult: 10,   color: "#32ff96" }
+    { name: "Cracked Pebble",   chance: 2,     maxMastery: 200,  earthMult: 2,   luckMult: 1.5,  color: "#a0a0a0" },
+    { name: "Smooth Basalt",    chance: 10,    maxMastery: 200,  earthMult: 3,   luckMult: 2,    color: "#505050" },
+    { name: "Sedimentary Slab", chance: 100,   maxMastery: 150,  earthMult: 5,   luckMult: 2,    color: "#8c6e5a" },
+    { name: "Geode Core",       chance: 250,   maxMastery: 100,  earthMult: 5,   luckMult: 3,    color: "#b464ff" },
+    { name: "Tectonic Slab",    chance: 2500,  maxMastery: 50,   earthMult: 10,  luckMult: 5,    color: "#ff6400" },
+    { name: "Gaia's Heart",     chance: 15000, maxMastery: 20,   earthMult: 20,  luckMult: 10,   color: "#32ff96" }
 ];
 
 const Upgrades = {
-    // Changed baseCost to 5 to match your requirement
     shovelPower: { name: "Shovel Power", baseCost: 5, costAdd: 5, maxLevel: 25, powerPerLevel: 1 }
 };
 
@@ -38,7 +37,7 @@ function showNotification(text) {
 
 function saveGame(isAuto = false) {
     localStorage.setItem("RunicIncrementalSave", JSON.stringify(player));
-    showNotification(isAuto ? "Autosaved..." : "Saved Successfully!");
+    if (!isAuto) showNotification("Saved Successfully!");
 }
 
 function loadGame() {
@@ -71,8 +70,10 @@ function resetGame() {
 function calculateTotals() {
     let eMult = 1, lMult = 1;
     EarthRunes.forEach(rune => {
-        const level = Math.min(player.collection[rune.name] || 0, rune.maxMastery);
+        const count = player.collection[rune.name] || 0;
+        const level = Math.min(count, rune.maxMastery);
         if (level > 0) {
+            // Linear progression of the multiplier bonus based on mastery completion
             eMult *= (1 + ((rune.earthMult - 1) * (level / rune.maxMastery)));
             lMult *= (1 + ((rune.luckMult - 1) * (level / rune.maxMastery)));
         }
@@ -90,7 +91,6 @@ function dig() {
 function buyUpgrade(id) {
     const upg = Upgrades[id];
     const level = player.upgrades[id] || 0;
-    // Updated cost formula: 5 + (Level * 5)
     const cost = upg.baseCost + (level * upg.costAdd);
     if (level < upg.maxLevel && player.earth >= cost) {
         player.earth -= cost;
@@ -127,7 +127,6 @@ function updateUI() {
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
         const upg = Upgrades[id], lvl = player.upgrades[id], maxed = lvl >= upg.maxLevel;
-        // Cost also updated here for visual display
         const cost = upg.baseCost + (lvl * upg.costAdd);
         const div = document.createElement('div');
         div.className = `upgrade-item ${maxed ? 'maxed' : ''}`;
