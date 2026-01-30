@@ -22,6 +22,7 @@ const AutoUpgrades = {
     autoUpgrade: { name: "Auto-Upgrade", cost: 500000, desc: "Buys cheapest Earth upgrade." }
 };
 
+// Initial State
 let player = {
     earth: 0,
     upgrades: { shovelPower: 0, pickaxe: 0, pickaxeStrength: 0, drill: 0, drillStrength: 0, runeLuck: 0, automation: 0 },
@@ -50,28 +51,42 @@ function calculateTotals() {
 
 function updateUI() {
     const stats = calculateTotals();
+    
+    // Numbers
     document.getElementById('earth-display').innerText = Math.floor(player.earth).toLocaleString();
     document.getElementById('earth-mult-display').innerText = `Multiplier: ${stats.mult.toFixed(2)}x`;
     document.getElementById('luck-stat-display').innerText = `Luck: ${stats.luck.toFixed(2)}x`;
     document.getElementById('dig-btn').innerText = `Dig (+${stats.gain.toFixed(1)})`;
 
+    // Hidden logic
     if (player.upgrades.pickaxe > 0) { Upgrades.pickaxeStrength.hidden = false; Upgrades.drill.hidden = false; }
     if (player.upgrades.drill > 0) { Upgrades.drillStrength.hidden = false; Upgrades.runeLuck.hidden = false; Upgrades.automation.hidden = false; }
     if (player.automationUnlocked) document.getElementById('auto-tab-btn').classList.remove('hidden');
 
+    // Render Standard Upgrades
     const upgList = document.getElementById('upgrade-list');
     upgList.innerHTML = "";
     Object.keys(Upgrades).forEach(id => {
         const upg = Upgrades[id];
         if (upg.hidden) return;
-        const lvl = player.upgrades[id], cost = upg.baseCost + (lvl * upg.costAdd);
+        const lvl = player.upgrades[id];
+        const cost = upg.baseCost + (lvl * upg.costAdd);
         const div = document.createElement('div');
         div.className = `upgrade-item ${lvl >= upg.maxLevel ? 'maxed' : ''}`;
-        div.onclick = () => { if(player.earth >= cost && lvl < upg.maxLevel) { player.earth -= cost; player.upgrades[id]++; if(id==='automation') player.automationUnlocked=true; updateUI(); } };
-        div.innerHTML = `<div><strong>${upg.name}</strong><br><small>Lvl ${lvl}/${upg.maxLevel}</small></div><div>${lvl >= upg.maxLevel ? 'MAX' : cost.toLocaleString()}</div>`;
+        div.onclick = () => {
+            if (player.earth >= cost && lvl < upg.maxLevel) {
+                player.earth -= cost;
+                player.upgrades[id]++;
+                if(id === 'automation') player.automationUnlocked = true;
+                updateUI();
+            }
+        };
+        div.innerHTML = `<div><strong>${upg.name}</strong><br><small>Lvl ${lvl}/${upg.maxLevel}</small></div>
+                         <div>${lvl >= upg.maxLevel ? 'MAX' : cost.toLocaleString()}</div>`;
         upgList.appendChild(div);
     });
 
+    // Render Automation Upgrades
     const autoList = document.getElementById('automation-upgrade-list');
     autoList.innerHTML = "";
     Object.keys(AutoUpgrades).forEach(id => {
@@ -79,11 +94,19 @@ function updateUI() {
         const owned = player.autoPurchased[id];
         const div = document.createElement('div');
         div.className = `upgrade-item ${owned ? 'maxed' : ''}`;
-        div.onclick = () => { if(!owned && player.earth >= upg.cost) { player.earth -= upg.cost; player.autoPurchased[id] = true; updateUI(); } };
-        div.innerHTML = `<div><strong>${upg.name}</strong><br><small>${upg.desc}</small></div><div>${owned ? 'ACTIVE' : upg.cost.toLocaleString()}</div>`;
+        div.onclick = () => {
+            if (!owned && player.earth >= upg.cost) {
+                player.earth -= upg.cost;
+                player.autoPurchased[id] = true;
+                updateUI();
+            }
+        };
+        div.innerHTML = `<div><strong>${upg.name}</strong><br><small>${upg.desc}</small></div>
+                         <div>${owned ? 'ACTIVE' : upg.cost.toLocaleString()}</div>`;
         autoList.appendChild(div);
     });
 
+    // Render Runes
     const runeList = document.getElementById('rune-list');
     runeList.innerHTML = "";
     EarthRunes.forEach(r => {
@@ -93,31 +116,57 @@ function updateUI() {
         div.className = `rune-item ${disc ? '' : 'undiscovered'}`;
         div.style.borderLeft = disc ? `5px solid ${r.color}` : `5px solid #333`;
         div.innerHTML = `<div><span style="color:${disc ? r.color : '#555'}">${disc ? r.name : '???'}</span> [${disc ? r.rarity : '???'}]<br>
-        <small>Owned: ${count} | 1 in ${disc ? (r.chance / stats.luck).toFixed(1) : '???'}</small></div>
-        <div class="rune-buffs" style="visibility:${disc ? 'visible' : 'hidden'}">x${r.earthMult} E | x${r.luckMult} L</div>`;
+                        <small>Owned: ${count} | 1 in ${disc ? (r.chance / stats.luck).toFixed(1) : '???'}</small></div>
+                        <div class="rune-buffs" style="visibility:${disc ? 'visible' : 'hidden'}">x${r.earthMult} Earth<br>x${r.luckMult} Luck</div>`;
         runeList.appendChild(div);
     });
 }
 
-document.getElementById('dig-btn').onclick = () => { player.earth += calculateTotals().gain; updateUI(); };
+// Logic Loops
+document.getElementById('dig-btn').onclick = () => { 
+    player.earth += calculateTotals().gain; 
+    updateUI(); 
+};
+
 document.getElementById('roll-btn').onclick = () => {
     if (player.earth >= 50) {
         player.earth -= 50;
         const stats = calculateTotals();
         let won = EarthRunes[0];
         let sorted = [...EarthRunes].sort((a,b) => b.chance - a.chance);
-        for (let r of sorted) { if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; } }
+        for (let r of sorted) { 
+            if (Math.random() < (1 / Math.max(1, r.chance / stats.luck))) { won = r; break; } 
+        }
         player.collection[won.name] = (player.collection[won.name] || 0) + 1;
         updateUI();
     }
 };
 
+// Automation Interval (5 times per second)
 setInterval(() => {
-    if (player.autoPurchased.autoDig) { player.earth += calculateTotals().gain / 5; updateUI(); }
+    if (player.autoPurchased.autoDig) {
+        player.earth += (calculateTotals().gain / 5);
+        updateUI();
+    }
 }, 200);
 
+// Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = () => { if(!btn.classList.contains('locked')) { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); } };
+    btn.onclick = () => {
+        if(!btn.classList.contains('locked')) {
+            document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        }
+    };
 });
+
+// Reset and Save
+document.getElementById('reset-btn').onclick = () => {
+    if(confirm("Wipe all progress?")) {
+        localStorage.clear();
+        location.reload();
+    }
+};
 
 updateUI();

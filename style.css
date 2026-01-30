@@ -9,25 +9,19 @@
     --border-color: #333;
 }
 
-body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; }
+body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
 .tab-content { display: none; width: 100%; }
 .tab-content.active { display: block; }
-.layout-wrapper { display: flex; gap: 30px; justify-content: center; }
+.layout-wrapper { display: flex; gap: 30px; justify-content: center; padding: 20px; }
 
-.tabs {
-    display: flex; justify-content: center; align-items: center; gap: 50px;
-    padding: 20px; background: var(--card-bg); border-bottom: 2px solid var(--border-color);
-}
+.tabs { display: flex; justify-content: center; align-items: center; gap: 50px; padding: 20px; background: var(--card-bg); border-bottom: 2px solid var(--border-color); }
 .nav-group { display: flex; gap: 15px; }
-.tab-btn {
-    padding: 10px 25px; background: #2a2a2a; border: 1px solid var(--border-color);
-    color: var(--text-dim); border-radius: 8px; cursor: pointer; font-weight: bold;
-}
+.tab-btn { padding: 10px 25px; background: #2a2a2a; border: 1px solid var(--border-color); color: var(--text-dim); border-radius: 8px; cursor: pointer; font-weight: bold; }
 .tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); background: #1e2e2c; }
 .tab-btn.hidden { display: none; }
 .tab-btn.locked { opacity: 0.4; cursor: not-allowed; }
 
-.top-controls { position: fixed; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 15px; pointer-events: none; z-index: 100; }
+.top-controls { position: fixed; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 15px; box-sizing: border-box; pointer-events: none; z-index: 100; }
 .corner-btn { pointer-events: auto; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; border: none; }
 .danger { background: var(--danger-color); color: white; }
 .success { background: var(--accent-color); color: black; }
@@ -38,17 +32,17 @@ body { background-color: var(--bg-color); color: var(--text-main); font-family: 
 
 #earth-display { font-size: 3.5rem; margin: 10px 0; }
 .stat-subtext { color: var(--accent-color); font-size: 1.1rem; }
-.luck-text { color: var(--luck-color); font-weight: bold; }
+.luck-text { color: var(--luck-color); font-weight: bold; margin-bottom: 10px; }
 
-.action-btn { width: 100%; padding: 18px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; border: none; }
+.action-btn { width: 100%; padding: 18px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; border: none; margin-top: 10px; }
 .main-btn { background: var(--accent-color); color: black; }
 .roll-btn { background: #5d4037; color: white; }
 
-.upgrade-window, .collection-window { height: 450px; overflow-y: auto; }
-.upgrade-item, .rune-item { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-.upgrade-item:hover { border: 1px solid var(--accent-color); }
-.upgrade-item.maxed { opacity: 0.5; cursor: default; }
+.upgrade-window, .collection-window { height: 450px; overflow-y: auto; margin-top: 15px; }
+.upgrade-item, .rune-item { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
+.upgrade-item:hover { border-color: var(--accent-color); cursor: pointer; }
+.upgrade-item.maxed { opacity: 0.5; cursor: default; border-color: transparent; }
 
 .undiscovered { filter: grayscale(1) brightness(0.4); }
-.rune-buffs { text-align: right; color: var(--accent-color); font-size: 0.8rem; }
+.rune-buffs { text-align: right; color: var(--accent-color); font-size: 0.8rem; line-height: 1.4; }
 .upgrade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
