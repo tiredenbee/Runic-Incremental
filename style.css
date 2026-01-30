@@ -77,4 +77,3 @@ body { background-color: var(--bg-color); color: var(--text-main); font-family: 
 
 #notification-container { min-height: 20px; }
 
-.bulk-text { color: #81c784; font-weight: bold; margin-bottom: 10px; }
